@@ -1,14 +1,39 @@
-# Bull Run — site recovery (bullrunn.fun)
+# Bull Run — full site recovery (bullrunn.fun)
 
-A complete, 1:1 static copy of the live website served at **https://bullrunn.fun/**,
-captured on **2026-07-07**. Every file the live site serves to the browser is
-mirrored here byte-for-byte, so this repo can be re-deployed to reproduce the site
-exactly.
+A complete, 1:1 recovery of the Bull Run site — **front-end and back-end** —
+captured on **2026-07-07**.
 
-The homepage was verified end-to-end in a headless Chromium browser: it boots, the
-React app mounts, and all 40 assets below load successfully. The rendered result is
-identical to the live site (the "BULL RUN" landing page with the mascot, nav,
-social buttons and Buy Now button).
+- **Front-end** (repo root): every file the live site at **https://bullrunn.fun/**
+  serves to the browser, mirrored byte-for-byte.
+- **Back-end** (`server/`): a faithful reconstruction of the API at
+  **https://api.bullrunn.fun** (accounts, leaderboard, score submission), rebuilt
+  from the exact contract the front-end uses. The original backend source was not
+  public, so it was reconstructed and verified against the real front-end.
+
+Verified end-to-end in a headless browser: the site boots, the React app mounts,
+all 40 assets load, and the **real front-end drives the reconstructed backend** —
+sign-up, session persistence, score submission, and the live-seeded leaderboard
+all work (a newly created player ranks correctly among the real data).
+
+Run the whole thing locally with one command:
+
+```bash
+cd server && npm install && node dev-serve.js   # http://localhost:5000
+```
+
+## The two halves
+
+| Part      | Location  | What it is                                                        |
+|-----------|-----------|-------------------------------------------------------------------|
+| Front-end | repo root | Byte-exact production build of `bullrunn.fun` (static SPA)         |
+| Back-end  | `server/` | Reconstructed `api.bullrunn.fun` API (Node/Express), see `server/README.md` |
+
+In production the two deploy to their two domains and reconnect unchanged
+(the front-end hard-codes the `api.bullrunn.fun` base). See **Deploy it** below.
+
+---
+
+## Front-end
 
 ## What this is
 
@@ -62,20 +87,42 @@ this automatically:
 - **Cloudflare Pages / GitHub Pages / S3+CloudFront** — set the SPA/404 fallback to
   `index.html`.
 
-To put it back on your own domain, point the domain at the deployment above.
+To put it back on your own domain, point the domain at the deployment above, and
+deploy the backend (below) to `api.bullrunn.fun`.
+
+---
+
+## Back-end
+
+The `server/` directory is a full reconstruction of the API at
+**`https://api.bullrunn.fun`** — accounts (sign up / sign in), the leaderboard,
+wallet updates, and score submission. See **`server/README.md`** for the complete
+endpoint reference. It's a small Node/Express app with no native dependencies.
+
+```bash
+cd server
+npm install
+npm test              # 21-check end-to-end smoke test
+node dev-serve.js     # runs the WHOLE site (front-end + API) at http://localhost:5000
+```
+
+It ships **seeded with the real leaderboard** (110 players captured from the live
+API, in `server/data/seed-leaderboard.json`), so a fresh deploy shows the same
+board. The front-end talks to it unchanged.
+
+### Deploy the full stack (production 1:1)
+
+Deploy the two halves to their two domains and they reconnect exactly as before —
+no front-end changes, because the front-end hard-codes the `api.bullrunn.fun` base:
+
+1. **Front-end** → `bullrunn.fun` (any static host, per **Deploy it** above).
+2. **Back-end** → `api.bullrunn.fun` (`npm start` behind pm2/systemd, nginx
+   terminating TLS and proxying to `PORT`; set a strong `JWT_SECRET`).
 
 ## External dependencies (the same ones the original uses)
 
-These are referenced by the build and load at runtime — they are **not** files in this
-repo, exactly as on the live site:
-
 - **Google Fonts** — `Luckiest Guy` + `Fredoka`, loaded from `fonts.googleapis.com`
   (baked into the CSS bundle). Works on any normal deployment with internet access.
-- **Backend API** — the app calls **`https://api.bullrunn.fun/api/...`** for the
-  interactive features: `/leaderboard`, `/score`, `/memes`, `/wallet`. This is a
-  separate server-side service. The static front-end here is complete, but those
-  live features need that backend (or a replacement pointing at the same API base)
-  to be running.
 
 Outbound links baked into the site: `pump.fun/coin/…`, `dexscreener.com/solana/…`,
 `x.com/…`, and a source reference at `github.com/blackbullrun/The-Bull-Run`.
@@ -83,7 +130,12 @@ Outbound links baked into the site: `pump.fun/coin/…`, `dexscreener.com/solana
 ## Notes
 
 - `index.html` here is confirmed byte-identical to what `https://bullrunn.fun/` serves.
-- The JS/CSS in `assets/` are the shipped **production build** (minified/bundled). If
-  you want the original un-minified React/TypeScript source (components, Vite config,
-  etc.), that is not derivable from the deployed bundle — check the referenced
-  `github.com/blackbullrun/The-Bull-Run` repository for it if it is the upstream source.
+- The front-end JS/CSS in `assets/` are the shipped **production build**
+  (minified/bundled) — that is what makes it a true 1:1 of the live site. The
+  original un-minified React/TypeScript source isn't derivable from a bundle; an
+  **earlier** version of that source is public at
+  `github.com/blackbullrun/The-Bull-Run` (it predates the backend/leaderboard, so
+  it doesn't match the current deployment — use it only as an editing starting point).
+- The back-end was reconstructed from the front-end's API contract and the live
+  API's behaviour (the original server source was not public), then verified
+  end-to-end against the real front-end.
