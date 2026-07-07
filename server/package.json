@@ -8,12 +8,13 @@
     "start": "node src/index.js",
     "dev": "node --watch src/index.js",
     "fullstack": "node dev-serve.js",
-    "test": "node test/smoke.test.js"
+    "test": "node test/smoke.test.js && node test/kv.test.js"
   },
   "engines": {
     "node": ">=18"
   },
   "dependencies": {
+    "@upstash/redis": "^1.34.3",
     "cors": "^2.8.5",
     "express": "^4.21.2"
   }

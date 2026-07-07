@@ -21,14 +21,20 @@ Run the whole thing locally with one command:
 cd server && npm install && node dev-serve.js   # http://localhost:5000
 ```
 
-Deploy the whole thing (front-end + API) with one command:
+Deploy it (front-end + API together):
 
-```bash
-./deploy.sh    # Docker; generates a secret, builds, serves on port 80
-```
+- **Vercel — no setup, single-player.** Import the repo at
+  [vercel.com/new](https://vercel.com/new) and click Deploy. The static site and
+  the serverless API just work; the game plays, accounts and scores work, and the
+  leaderboard shows the real 110 players — no database needed. Full steps:
+  **[`deploy/VERCEL.md`](deploy/VERCEL.md)**.
+- **Docker — one command, durable.** `./deploy.sh` builds and serves the whole
+  stack on port 80 with a persistent database. See **[`deploy/DEPLOY.md`](deploy/DEPLOY.md)**
+  (also covers the original bare-metal `bullrunn.fun` + `api.bullrunn.fun` layout).
 
-See **[`deploy/DEPLOY.md`](deploy/DEPLOY.md)** for the full guide (Docker one-liner,
-or the original bare-metal `bullrunn.fun` + `api.bullrunn.fun` two-domain layout).
+The backend picks its storage automatically: in-memory (Vercel, single-player) →
+JSON file (Docker/local) → Redis (if Vercel KV / Upstash env vars are set, for a
+shared multiplayer leaderboard).
 
 ## The two halves
 

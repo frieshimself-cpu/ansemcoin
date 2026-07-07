@@ -2,10 +2,18 @@
   "name": "bullrun-site",
   "private": true,
   "version": "1.0.0",
-  "description": "Static mirror of the Bull Run website (bullrunn.fun).",
+  "description": "Bull Run — static front-end + serverless API (Vercel-ready).",
+  "engines": {
+    "node": "22.x"
+  },
   "scripts": {
     "start": "serve -s . -l 5173",
     "serve": "serve -s . -l 5173"
+  },
+  "dependencies": {
+    "@upstash/redis": "^1.34.3",
+    "cors": "^2.8.5",
+    "express": "^4.21.2"
   },
   "devDependencies": {
     "serve": "^14.2.1"

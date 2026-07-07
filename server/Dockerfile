@@ -9,11 +9,11 @@ RUN npm ci --omit=dev
 
 COPY . .
 
-# Keep the seed leaderboard outside DATA_DIR so it survives an empty mounted
-# volume (see src/index.js). DATA_DIR holds the live db.json.
-RUN mkdir -p /app/seed && cp data/seed-leaderboard.json /app/seed/seed-leaderboard.json
-ENV SEED_FILE=/app/seed/seed-leaderboard.json
-ENV DATA_DIR=/app/data
+# DATA_DIR holds the live db.json — mount a volume at /data to persist. It's kept
+# separate from the bundled code (the seed leaderboard is required as JSON from
+# /app/data), so a mounted volume can't hide the seed.
+RUN mkdir -p /data
+ENV DATA_DIR=/data
 ENV PORT=8787
 
 EXPOSE 8787

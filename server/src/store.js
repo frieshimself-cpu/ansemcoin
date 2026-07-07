@@ -1,17 +1,22 @@
 'use strict';
 
-// A tiny JSON-file-backed store. Keeps the whole dataset in memory and persists
-// synchronously (atomic tmp-file + rename) on every mutation. This is plenty for
-// a leaderboard-style workload and keeps the backend dependency-free — swap in a
-// real database here if the site grows.
+// In-memory store with optional JSON-file persistence.
+//
+//   - dbFile set   -> loads/persists to that file (local dev, Docker, VPS).
+//   - dbFile null  -> pure in-memory, seeded on boot (Vercel serverless, where
+//                     the filesystem is read-only). Data resets on cold start;
+//                     use the KV store (store-kv.js) for durable serverless.
+//
+// The initial leaderboard is passed in as `seed` (an array of {username,
+// highScore}) so it's bundled with the code and available everywhere.
 
 const fs = require('fs');
 const path = require('path');
 
 class Store {
-  constructor({ dbFile, seedFile }) {
+  constructor({ dbFile = null, seed = [] } = {}) {
     this.dbFile = dbFile;
-    this.seedFile = seedFile;
+    this.seed = seed;
     // users keyed by lowercased username (case-insensitive uniqueness),
     // value: { username, passwordHash|null, wallet, highScore, createdAt }
     this.users = new Map();
@@ -19,7 +24,7 @@ class Store {
   }
 
   _load() {
-    if (fs.existsSync(this.dbFile)) {
+    if (this.dbFile && fs.existsSync(this.dbFile)) {
       try {
         const raw = JSON.parse(fs.readFileSync(this.dbFile, 'utf8'));
         for (const u of raw.users || []) this.users.set(u.username.toLowerCase(), u);
@@ -36,27 +41,22 @@ class Store {
   // deploy shows the same board. Seed entries have no password (passwordHash:
   // null) — they exist for the leaderboard and cannot be signed into.
   _seed() {
-    if (!this.seedFile || !fs.existsSync(this.seedFile)) return;
-    try {
-      const entries = JSON.parse(fs.readFileSync(this.seedFile, 'utf8'));
-      for (const e of entries) {
-        if (typeof e.username !== 'string') continue;
-        const key = e.username.toLowerCase();
-        if (this.users.has(key)) continue;
-        this.users.set(key, {
-          username: e.username,
-          passwordHash: null,
-          wallet: '',
-          highScore: Number(e.highScore) || 0,
-          createdAt: 0,
-        });
-      }
-    } catch (e) {
-      console.error('[store] seed failed:', e.message);
+    for (const e of this.seed) {
+      if (typeof e.username !== 'string') continue;
+      const key = e.username.toLowerCase();
+      if (this.users.has(key)) continue;
+      this.users.set(key, {
+        username: e.username,
+        passwordHash: null,
+        wallet: '',
+        highScore: Number(e.highScore) || 0,
+        createdAt: 0,
+      });
     }
   }
 
   _persist() {
+    if (!this.dbFile) return; // memory-only mode
     const tmp = `${this.dbFile}.tmp`;
     const data = JSON.stringify({ users: [...this.users.values()] });
     fs.mkdirSync(path.dirname(this.dbFile), { recursive: true });
@@ -69,9 +69,8 @@ class Store {
   }
 
   createUser({ username, passwordHash, wallet, createdAt }) {
-    const key = username.toLowerCase();
     const user = { username, passwordHash, wallet, highScore: 0, createdAt };
-    this.users.set(key, user);
+    this.users.set(username.toLowerCase(), user);
     this._persist();
     return user;
   }

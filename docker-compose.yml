@@ -14,7 +14,7 @@ services:
       JWT_SECRET: ${JWT_SECRET:?set JWT_SECRET (run ./deploy.sh, or put it in .env)}
       PORT: "8787"
     volumes:
-      - bullrun-data:/app/data
+      - bullrun-data:/data
     restart: unless-stopped
 
   web:
