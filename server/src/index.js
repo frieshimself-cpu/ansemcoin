@@ -36,9 +36,12 @@ const {
 
 const PORT = Number(process.env.PORT) || 8787;
 const DATA_DIR = process.env.DATA_DIR || path.join(__dirname, '..', 'data');
+// Seed file is separate from DATA_DIR so the initial leaderboard survives even
+// when DATA_DIR is an empty mounted volume (e.g. in Docker).
+const SEED_FILE = process.env.SEED_FILE || path.join(DATA_DIR, 'seed-leaderboard.json');
 const store = new Store({
   dbFile: path.join(DATA_DIR, 'db.json'),
-  seedFile: path.join(DATA_DIR, 'seed-leaderboard.json'),
+  seedFile: SEED_FILE,
 });
 
 const app = express();

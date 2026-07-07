@@ -1,0 +1,33 @@
+# systemd unit for the Bull Run backend (bare-metal / no-Docker deploy).
+#
+#   sudo cp deploy/bullrun-api.service /etc/systemd/system/
+#   sudo mkdir -p /var/lib/bullrun && sudo cp server/data/seed-leaderboard.json /var/lib/bullrun/
+#   # edit the Environment lines below (set a real JWT_SECRET), then:
+#   sudo systemctl daemon-reload && sudo systemctl enable --now bullrun-api
+#
+# Assumes the repo is at /opt/bullrun and `npm ci --omit=dev` was run in server/.
+
+[Unit]
+Description=Bull Run API (api.bullrunn.fun)
+After=network.target
+
+[Service]
+Type=simple
+WorkingDirectory=/opt/bullrun/server
+ExecStart=/usr/bin/node src/index.js
+Restart=always
+RestartSec=3
+Environment=NODE_ENV=production
+Environment=PORT=8787
+Environment=DATA_DIR=/var/lib/bullrun
+Environment=SEED_FILE=/var/lib/bullrun/seed-leaderboard.json
+# CHANGE THIS to a long random string:
+#   node -e "console.log(require('crypto').randomBytes(48).toString('hex'))"
+Environment=JWT_SECRET=CHANGE_ME
+# Hardening
+NoNewPrivileges=true
+ProtectSystem=strict
+ReadWritePaths=/var/lib/bullrun
+
+[Install]
+WantedBy=multi-user.target

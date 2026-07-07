@@ -21,6 +21,15 @@ Run the whole thing locally with one command:
 cd server && npm install && node dev-serve.js   # http://localhost:5000
 ```
 
+Deploy the whole thing (front-end + API) with one command:
+
+```bash
+./deploy.sh    # Docker; generates a secret, builds, serves on port 80
+```
+
+See **[`deploy/DEPLOY.md`](deploy/DEPLOY.md)** for the full guide (Docker one-liner,
+or the original bare-metal `bullrunn.fun` + `api.bullrunn.fun` two-domain layout).
+
 ## The two halves
 
 | Part      | Location  | What it is                                                        |
